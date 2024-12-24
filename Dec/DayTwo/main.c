@@ -2,74 +2,58 @@
 #include <stdio.h>
 #include "../Strix/header/strix.h"
 
-bool is_line_correct(const int32_t *line, size_t len)
+#include <stdbool.h>
+#include <string.h>
+
+bool is_sequence_valid(const int32_t *line, size_t len)
 {
     if (len <= 1)
         return true;
 
-    const int32_t first_diff = line[1] - line[0];
+    bool should_increase = (line[1] - line[0]) > 0;
 
-    if (abs(first_diff) < 1 || abs(first_diff) > 3)
-        return false;
-
-    if (len == 2)
-        return true;
-
-    const bool should_increase = (first_diff > 0);
-
-    bool one_tolerated = false;
-
-    for (size_t i = 1; i < len - 1; i++)
+    for (size_t i = 0; i < len - 1; i++)
     {
-        const int32_t diff = line[i + 1] - line[i];
+        int32_t diff = line[i + 1] - line[i];
 
-        if (should_increase && (diff <= 0 || diff > 3 || diff < 1))
+        if (should_increase)
         {
-            return false;
+            if (diff < 1 || diff > 3)
+                return false;
         }
-
-        if (!should_increase && (diff >= 0 || diff > -1 || diff < -3))
+        else
         {
-            return false;
+            if (diff > -1 || diff < -3)
+                return false;
         }
     }
-
     return true;
 }
 
-bool is_line_correct_new(int32_t *line, size_t len, int32_t index_to_ignore)
+bool is_line_correct(int32_t *line, size_t len)
 {
-    if (len <= 1)
+    if (is_sequence_valid(line, len))
         return true;
 
-    const int32_t first_diff = line[1] - line[0];
-
-    if (abs(first_diff) < 1 || abs(first_diff) > 3)
-        return false;
-
-    if (len == 2)
-        return true;
-
-    const bool should_increase = (first_diff > 0);
-
-    bool one_tolerated = false;
-
-    for (size_t i = 1; i < len - 1; i++)
+    int32_t temp[len];
+    for (size_t i = 0; i < len; i++)
     {
-        const int32_t diff = line[i + 1] - line[i];
-
-        if (should_increase && (diff <= 0 || diff > 3 || diff < 1))
+        size_t new_len = 0;
+        for (size_t j = 0; j < len; j++)
         {
-            return false;
+            if (j != i)
+            {
+                temp[new_len++] = line[j];
+            }
         }
 
-        if (!should_increase && (diff >= 0 || diff > -1 || diff < -3))
+        if (is_sequence_valid(temp, len - 1))
         {
-            return false;
+            return true;
         }
     }
 
-    return true;
+    return false;
 }
 
 int main()
@@ -136,7 +120,9 @@ int main()
         return EXIT_FAILURE;
     }
 
-    int32_t correct_count = 0;
+    int32_t correct_count_part_one = 0;
+    int32_t correct_count_part_two = 0;
+
     for (size_t counter = 0; counter < input_lines->len; counter++)
     {
         line = input_lines->strix_arr[counter];
@@ -173,7 +159,12 @@ int main()
 
         if (is_line_correct(line_arr, line_num->len))
         {
-            correct_count++;
+            correct_count_part_two++;
+        }
+
+        if (is_sequence_valid(line_arr, line_num->len))
+        {
+            correct_count_part_one++;
         }
 
         strix_free_strix_arr(line_num);
@@ -183,6 +174,8 @@ int main()
     strix_free_strix_arr(input_lines);
     fclose(input_file);
 
-    fprintf(stdout, "Number of correct lines: %d\n", correct_count);
+    fprintf(stdout, "Number of correct lines (part_one): %d\n", correct_count_part_one);
+    fprintf(stdout, "Number of correct lines (part_two): %d\n", correct_count_part_two);
+
     return EXIT_SUCCESS;
 }
