@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
-#include "header/strix.h"
+#include "Strix/header/strix.h"
 
 static inline void swap(int32_t *a, int32_t *b)
 {
@@ -143,6 +143,12 @@ int main(void)
     }
 
     fprintf(stdout, "distance: %lu\n", distance);
+
+    int64_t similarity = 0;
+
+    for (size_t counter = 0; counter < input_file_sep->len; counter++)
+    {
+    }
 
     strix_free_strix_arr(input_file_sep);
     return EXIT_SUCCESS;
