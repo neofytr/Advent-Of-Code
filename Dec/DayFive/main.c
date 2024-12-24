@@ -4,6 +4,55 @@
 #include "../Strix/header/strix.h"
 #include "./hash_table.h"
 
+/* bool is_valid_update(const int32_t *update, size_t update_len, hash_table_t *rules)
+{
+    bool seen[10000] = {false}; // assuming max num can be 10000
+
+    for (size_t i = 0; i < update_len; i++)
+    {
+        int32_t current = update[i];
+        seen[current] = true;
+
+        hash_node_t *current_rules = hash_table_search(rules, current);
+        if (current_rules)
+        {
+            for (size_t j = 0; j < current_rules->len; j++)
+            {
+                if (seen[current_rules->elements_in_front[j]])
+                {
+                    return false;
+                }
+            }
+        }
+    }
+    return true;
+} */
+
+bool is_valid_update(const int32_t *nums_arr, size_t nums_len, hash_table_t *hash_table)
+{
+    bool already_seen[10000] = {false};
+
+    for (size_t counter = 0; counter < nums_len; counter++)
+    {
+        int32_t curr_num = nums_arr[counter];
+        already_seen[curr_num] = true;
+
+        hash_node_t *searched_node = hash_table_search(hash_table, curr_num);
+        if (searched_node)
+        {
+            for (size_t index = 0; index < searched_node->len; index++)
+            {
+                if (already_seen[searched_node->elements_in_front[index]])
+                {
+                    return false;
+                }
+            }
+        }
+    }
+
+    return true;
+}
+
 int main()
 {
     FILE *input_file = fopen("input.txt", "r");
@@ -166,34 +215,7 @@ int main()
             num_arr[i] = strix_to_signed_int(nums->strix_arr[i]);
         }
 
-        int is_valid_update = 1;
-        for (size_t i = 0; i < nums_len; i++)
-        {
-            hash_node_t *search_node = hash_table_search(order_hash_table, num_arr[i]);
-            if (!search_node)
-            {
-                continue;
-            }
-
-            for (size_t j = 0; j < search_node->len; j++)
-            {
-                int32_t must_come_after = search_node->elements_in_front[j];
-                for (size_t k = 0; k < i; k++)
-                {
-                    if (num_arr[k] == must_come_after)
-                    {
-                        is_valid_update = 0;
-                        break;
-                    }
-                }
-                if (!is_valid_update)
-                    break;
-            }
-            if (!is_valid_update)
-                break;
-        }
-
-        if (is_valid_update)
+        if (is_valid_update(num_arr, nums_len, order_hash_table))
         {
             valid_update_count++;
             mid_count += num_arr[nums->len / 2];
@@ -202,7 +224,7 @@ int main()
         strix_free_strix_arr(nums);
     }
 
-    fprintf(stdout, "%zu %zu\n", valid_update_count, mid_count);
+    fprintf(stdout, "valid update count: %zu, valid mid sum: %zu\n", valid_update_count, mid_count);
 
     hash_table_clear(order_hash_table);
     strix_free_strix_arr(lines);
