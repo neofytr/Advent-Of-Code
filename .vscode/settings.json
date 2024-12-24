@@ -1,0 +1,6 @@
+{
+    "files.associations": {
+        "strix_errno.h": "c",
+        "string_search.h": "c"
+    }
+}
