@@ -1,7 +1,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
-#include "Strix/header/strix.h"
+#include "../Strix/header/strix.h"
+#include "../int_hash_table.h"
 
 static inline void swap(int32_t *a, int32_t *b)
 {
@@ -43,6 +44,20 @@ void sort_array(int32_t *arr, size_t n)
     {
         quicksort(arr, 0, (int)n - 1);
     }
+}
+
+int32_t count_occurrence(int32_t *arr, size_t len, int32_t value)
+{
+    int32_t count = 0;
+    for (size_t counter = 0; counter < len; counter++)
+    {
+        if (arr[counter] == value)
+        {
+            count++;
+        }
+    }
+
+    return count;
 }
 
 int main(void)
@@ -146,9 +161,25 @@ int main(void)
 
     int64_t similarity = 0;
 
+    int_hash_table_t *hash_table = create_int_hash_table();
+
     for (size_t counter = 0; counter < input_file_sep->len; counter++)
     {
+        int_hash_node_t *searched_node = int_hash_table_search(hash_table, first_array[counter]);
+        if (!searched_node)
+        {
+            int32_t count = count_occurrence(second_array, input_file_sep->len, first_array[counter]);
+            int_hash_table_insert(hash_table, first_array[counter], count);
+            similarity += first_array[counter] * count;
+        }
+        else
+        {
+            similarity += first_array[counter] * searched_node->value;
+        }
     }
+
+    int_hash_table_clear(hash_table);
+    fprintf(stdout, "similarity: %ld\n", similarity);
 
     strix_free_strix_arr(input_file_sep);
     return EXIT_SUCCESS;
