@@ -63,5 +63,10 @@ int main()
     free(input_file_array);
     fclose(input_file);
 
+    if (!strix_delete_occurence(input_strix, "\n"))
+    {
+        return EXIT_FAILURE;
+    }
+
     
 }
