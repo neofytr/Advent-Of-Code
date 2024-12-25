@@ -68,5 +68,5 @@ int main()
         return EXIT_FAILURE;
     }
 
-    
+    char_arr_t *strix_find_unique_char(input_strix);
 }
