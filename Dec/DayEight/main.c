@@ -87,6 +87,8 @@ int main()
         return EXIT_FAILURE;
     }
 
+    fprintf(stdout, STRIX_FORMAT, STRIX_PRINT(input_strix));
+
     for (size_t counter = 0; counter < char_arr->len; counter++)
     {
         char new_unique_char = char_arr->unique_char_arr[counter];
@@ -94,8 +96,8 @@ int main()
         {
             continue;
         }
-        char str[2] = {new_unique_char, '\0'};
-        position_t *all_positions = strix_find_all(input_strix, str);
+
+        position_t *all_positions = strix_find_all(input_strix, );
         if (!all_positions)
         {
             fprintf(stderr, "Failed to find positions for character '%c'\n", new_unique_char);
