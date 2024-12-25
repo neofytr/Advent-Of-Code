@@ -34,13 +34,14 @@ int main()
         return EXIT_FAILURE;
     }
 
-    uint8_t *input_file_array = (uint8_t *)malloc(input_file_len * sizeof(uint8_t));
+    uint8_t *input_file_array = (uint8_t *)malloc((input_file_len + 1) * sizeof(uint8_t));
     if (!input_file_array)
     {
         fprintf(stderr, "Failed to allocate memory for file content\n");
         fclose(input_file);
         return EXIT_FAILURE;
     }
+    input_file_array[input_file_len] = '\0';
 
     size_t bytes_read = fread((void *)input_file_array, sizeof(uint8_t), input_file_len, input_file);
     if (bytes_read < (size_t)(input_file_len / sizeof(uint8_t)))
