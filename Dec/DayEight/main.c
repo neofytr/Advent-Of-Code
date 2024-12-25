@@ -1,157 +1,119 @@
 #include <stdlib.h>
 #include <stdio.h>
-#include "../Strix/header/strix.h"
+#include <stdbool.h>
+#include <string.h>
 
-int main()
+typedef struct
 {
-    FILE *input_file = fopen("input.txt", "r");
-    if (!input_file)
-    {
-        fprintf(stderr, "Failed to open input file\n");
-        return EXIT_FAILURE;
-    }
+    int y;
+    int x;
+} Position;
 
-    if (fseek(input_file, 0, SEEK_END) != 0)
-    {
-        fprintf(stderr, "Failed to seek to end of file\n");
-        fclose(input_file);
-        return EXIT_FAILURE;
-    }
+typedef struct
+{
+    Position *positions;
+    size_t count;
+} PositionList;
 
-    long input_file_len = ftell(input_file);
-    if (input_file_len < 0)
-    {
-        fprintf(stderr, "Failed to get file length\n");
-        fclose(input_file);
-        return EXIT_FAILURE;
-    }
+typedef struct
+{
+    Position *positions;
+    size_t count;
+    size_t capacity;
+} AntiNodeSet;
 
-    if (fseek(input_file, 0, SEEK_SET) != 0)
+void add_antinode(AntiNodeSet *set, int y, int x, size_t height, size_t width)
+{
+    if (y >= 0 && y < (int)height && x >= 0 && x < (int)width)
     {
-        fprintf(stderr, "Failed to seek to start of file\n");
-        fclose(input_file);
-        return EXIT_FAILURE;
-    }
-
-    uint8_t *input_file_array = (uint8_t *)malloc(input_file_len + 1);
-    if (!input_file_array)
-    {
-        fprintf(stderr, "Failed to allocate memory for file content\n");
-        fclose(input_file);
-        return EXIT_FAILURE;
-    }
-    input_file_array[input_file_len] = '\0';
-
-    size_t bytes_read = fread(input_file_array, 1, input_file_len, input_file);
-    if (bytes_read != (size_t)input_file_len)
-    {
-        fprintf(stderr, "Failed to read file content (read %zu of %ld bytes)\n",
-                bytes_read, input_file_len);
-        free(input_file_array);
-        fclose(input_file);
-        return EXIT_FAILURE;
-    }
-
-    strix_t *input_strix = strix_create((const char *)input_file_array);
-    if (!input_strix)
-    {
-        fprintf(stderr, "Failed to create input strix\n");
-        free(input_file_array);
-        fclose(input_file);
-        return EXIT_FAILURE;
-    }
-    free(input_file_array);
-    fclose(input_file);
-
-    if (!strix_delete_occurence(input_strix, "\n"))
-    {
-        fprintf(stderr, "Failed to delete newline occurrences\n");
-        strix_free(input_strix);
-        return EXIT_FAILURE;
-    }
-
-    char_arr_t *char_arr = strix_find_unique_char(input_strix);
-    if (!char_arr)
-    {
-        fprintf(stderr, "Failed to find unique characters\n");
-        strix_free(input_strix);
-        return EXIT_FAILURE;
-    }
-
-    bool *in_anti_arr = (bool *)calloc(input_strix->len, sizeof(bool));
-    if (!in_anti_arr)
-    {
-        fprintf(stderr, "Failed to allocate anti array\n");
-        strix_free_char_arr(char_arr);
-        strix_free(input_strix);
-        return EXIT_FAILURE;
-    }
-
-    fprintf(stdout, STRIX_FORMAT, STRIX_PRINT(input_strix));
-
-    for (size_t counter = 0; counter < char_arr->len; counter++)
-    {
-        char new_unique_char = char_arr->unique_char_arr[counter];
-        if (new_unique_char == '.')
+        for (size_t i = 0; i < set->count; i++)
         {
-            continue;
-        }
-
-        position_t *all_positions = strix_find_all(input_strix, );
-        if (!all_positions)
-        {
-            fprintf(stderr, "Failed to find positions for character '%c'\n", new_unique_char);
-            free(in_anti_arr);
-            strix_free_char_arr(char_arr);
-            strix_free(input_strix);
-            return EXIT_FAILURE;
-        }
-
-        /* fprintf(stdout, "%c\n", new_unique_char);
-        for (size_t i = 0; i < all_positions->len; i++)
-        {
-            fprintf(stdout, "%zu\n", all_positions->pos[i]);
-        } */
-
-        for (size_t i = 0; i < all_positions->len; i++)
-        {
-            for (size_t j = 0; j < i; j++)
+            if (set->positions[i].y == y && set->positions[i].x == x)
             {
-                int64_t pos_one = all_positions->pos[i] + (all_positions->pos[i] - all_positions->pos[j]);
-                if (!in_anti_arr[pos_one] && pos_one >= 0 && pos_one < (int64_t)input_strix->len && pos_one >= all_positions->pos[all_positions->len - 1])
-                {
-                    in_anti_arr[pos_one] = true;
-                }
-
-                int64_t pos_two = all_positions->pos[j] - (all_positions->pos[i] - all_positions->pos[j]);
-                if (pos_two >= 0 && pos_two < (int64_t)input_strix->len &&
-                    !in_anti_arr[pos_two] && pos_two <= all_positions->pos[0])
-                {
-                    in_anti_arr[pos_two] = true;
-                }
-
-                // fprintf(stdout, "%ld %ld\n", all_positions->pos[j], all_positions->pos[i]);
+                return;
             }
         }
 
-        // strix_free_positions(all_positions);
-    }
-
-    size_t total = 0;
-    for (size_t counter = 0; counter < input_strix->len; counter++)
-    {
-        if (in_anti_arr[counter])
+        if (set->count == set->capacity)
         {
-            // printf("%zu\n", counter);
-            total++;
+            set->capacity *= 2;
+            set->positions = realloc(set->positions, sizeof(Position) * set->capacity);
+        }
+
+        set->positions[set->count].y = y;
+        set->positions[set->count].x = x;
+        set->count++;
+    }
+}
+
+int main()
+{
+    FILE *file = fopen("input.txt", "r");
+    if (!file)
+        return 1;
+
+    char lines[200][200];
+    size_t height = 0, width = 0;
+    char line[200];
+
+    while (fgets(line, sizeof(line), file))
+    {
+        size_t len = strlen(line);
+        if (line[len - 1] == '\n')
+            line[--len] = '\0';
+        if (width == 0)
+            width = len;
+        strcpy(lines[height++], line);
+    }
+    fclose(file);
+
+    PositionList antennas[128] = {0}; // ASCII range
+
+    AntiNodeSet antinodes = {
+        .positions = malloc(sizeof(Position) * 1000),
+        .count = 0,
+        .capacity = 1000};
+
+    for (size_t y = 0; y < height; y++)
+    {
+        for (size_t x = 0; x < width; x++)
+        {
+            char c = lines[y][x];
+            if (c != '.')
+            {
+                PositionList *list = &antennas[c];
+
+                for (size_t i = 0; i < list->count; i++)
+                {
+                    Position prev = list->positions[i];
+                    int dY = y - prev.y;
+                    int dX = x - prev.x;
+
+                    add_antinode(&antinodes, y + dY, x + dX, height, width);
+                    add_antinode(&antinodes, prev.y - dY, prev.x - dX, height, width);
+                }
+
+                if (list->count == 0)
+                {
+                    list->positions = malloc(sizeof(Position) * 10);
+                }
+                list->positions[list->count].y = y;
+                list->positions[list->count].x = x;
+                list->count++;
+            }
         }
     }
 
-    printf("Total: %zu\n", total);
+    printf("Total antinodes: %zu\n", antinodes.count);
 
-    free(in_anti_arr);
-    strix_free_char_arr(char_arr);
-    strix_free(input_strix);
+    for (int i = 0; i < 128; i++)
+    {
+        if (antennas[i].count > 0)
+        {
+            free(antennas[i].positions);
+        }
+    }
+    free(antinodes.positions);
 
-    return EXIT_SUCCESS;
+    return 0;
 }
