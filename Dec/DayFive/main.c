@@ -3,30 +3,7 @@
 
 #include "../Strix/header/strix.h"
 #include "./hash_table.h"
-
-/* bool is_valid_update(const int32_t *update, size_t update_len, hash_table_t *rules)
-{
-    bool seen[10000] = {false}; // assuming max num can be 10000
-
-    for (size_t i = 0; i < update_len; i++)
-    {
-        int32_t current = update[i];
-        seen[current] = true;
-
-        hash_node_t *current_rules = hash_table_search(rules, current);
-        if (current_rules)
-        {
-            for (size_t j = 0; j < current_rules->len; j++)
-            {
-                if (seen[current_rules->elements_in_front[j]])
-                {
-                    return false;
-                }
-            }
-        }
-    }
-    return true;
-} */
+#include "../int_hash_table.h"
 
 bool is_valid_update(const int32_t *nums_arr, size_t nums_len, hash_table_t *hash_table)
 {
@@ -51,6 +28,84 @@ bool is_valid_update(const int32_t *nums_arr, size_t nums_len, hash_table_t *has
     }
 
     return true;
+}
+
+int32_t mid_fixed_arr(const int32_t *nums_arr, size_t nums_len, hash_table_t *hash_table)
+{
+    int32_t *in_degree = (int32_t *)calloc(10000, sizeof(int32_t));
+    int32_t *result = (int32_t *)malloc(nums_len * sizeof(int32_t));
+    bool *exists = (bool *)calloc(10000, sizeof(bool));
+
+    if (!in_degree || !result || !exists)
+    {
+        free(in_degree);
+        free(result);
+        free(exists);
+        return -1;
+    }
+
+    for (size_t i = 0; i < nums_len; i++)
+    {
+        exists[nums_arr[i]] = true;
+    }
+
+    for (size_t i = 0; i < nums_len; i++)
+    {
+        hash_node_t *node = hash_table_search(hash_table, nums_arr[i]);
+        if (node)
+        {
+            for (size_t j = 0; j < node->len; j++)
+            {
+                if (exists[node->elements_in_front[j]])
+                {
+                    in_degree[node->elements_in_front[j]]++;
+                }
+            }
+        }
+    }
+
+    int32_t queue[10000];
+    size_t queue_front = 0, queue_back = 0;
+
+    for (size_t i = 0; i < nums_len; i++)
+    {
+        if (in_degree[nums_arr[i]] == 0)
+        {
+            queue[queue_back++] = nums_arr[i];
+        }
+    }
+
+    size_t sorted_count = 0;
+    while (queue_front < queue_back)
+    {
+        int32_t current = queue[queue_front++];
+        result[sorted_count++] = current;
+
+        hash_node_t *node = hash_table_search(hash_table, current);
+        if (node)
+        {
+            for (size_t i = 0; i < node->len; i++)
+            {
+                int32_t next = node->elements_in_front[i];
+                if (exists[next])
+                {
+                    in_degree[next]--;
+                    if (in_degree[next] == 0)
+                    {
+                        queue[queue_back++] = next;
+                    }
+                }
+            }
+        }
+    }
+
+    int32_t middle_value = result[nums_len / 2];
+
+    free(in_degree);
+    free(result);
+    free(exists);
+
+    return middle_value;
 }
 
 int main()
@@ -192,6 +247,7 @@ int main()
 
     size_t valid_update_count = 0;
     size_t mid_count = 0;
+    size_t prev_invalid_mid_count = 0;
 
     for (size_t counter = update_start_line; counter < lines->len; counter++)
     {
@@ -220,11 +276,15 @@ int main()
             valid_update_count++;
             mid_count += num_arr[nums->len / 2];
         }
+        else
+        {
+            prev_invalid_mid_count += mid_fixed_arr(num_arr, nums_len, order_hash_table);
+        }
 
         strix_free_strix_arr(nums);
     }
 
-    fprintf(stdout, "valid update count: %zu, valid mid sum: %zu\n", valid_update_count, mid_count);
+    fprintf(stdout, "valid update count: %zu, valid mid sum: %zu, prev invalid mid sum: %zu\n", valid_update_count, mid_count, prev_invalid_mid_count);
 
     hash_table_clear(order_hash_table);
     strix_free_strix_arr(lines);
