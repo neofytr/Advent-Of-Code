@@ -57,10 +57,6 @@ static bool is_next_obstacle(const pointer_t *pointer, strix_t **rows, strix_t *
         break;
     }
 
-    if (next_row < 0 || next_row >= (int64_t)total_rows ||
-        next_col < 0 || next_col >= (int64_t)total_cols)
-        return true;
-
     switch (pointer->pointer_orientation)
     {
     case UP:
@@ -240,6 +236,12 @@ int main()
         .pointer_orientation = UP,
     };
 
+    pointer_t start = {
+        .pointer_row = pointer_pos / (total_cols + 1),
+        .pointer_col = pointer_pos % (total_cols + 1),
+        .pointer_orientation = UP,
+    };
+
     input_strix->str[pointer_pos] = '.';
 
     const size_t max_grid_size = 20000;
@@ -257,7 +259,7 @@ int main()
     {
         int64_t current_pos = pointer.pointer_row * total_cols + pointer.pointer_col;
 
-        if (current_pos >= 0 && current_pos < (int64_t)max_grid_size && !already_visited[current_pos])
+        if (!already_visited[current_pos])
         {
             already_visited[current_pos] = true;
             visited_count++;
@@ -271,11 +273,66 @@ int main()
         {
             move_ahead(&pointer);
         }
-
-        printf("row: %ld col: %ld\n", pointer.pointer_row, pointer.pointer_col);
     }
 
     printf("Total visited positions: %zu\n", visited_count);
+
+    size_t inf_count = 0;
+
+    for (size_t row = 0; row < total_rows; row++)
+    {
+        for (size_t col = 0; col < total_cols; col++)
+        {
+            if (row == start.pointer_row && col == start.pointer_col)
+            {
+                continue;
+            }
+
+            if (rows[row]->str[col] == '.')
+            {
+                rows[row]->str[col] = '#';
+            }
+            else
+            {
+                continue;
+            }
+
+            bool *visited_states = (bool *)calloc(total_rows * total_cols * 4, sizeof(bool));
+
+            pointer_t new = {
+                .pointer_row = start.pointer_row, // Use the original starting position
+                .pointer_col = start.pointer_col,
+                .pointer_orientation = UP,
+            };
+
+            size_t state_index;
+
+            while ((new.pointer_row > 0 && new.pointer_row < (int64_t)total_rows - 1 && new.pointer_col > 0 && new.pointer_col < (int64_t)total_cols - 1))
+            {
+                state_index = (new.pointer_row *total_cols + new.pointer_col) * 4 + new.pointer_orientation;
+                if (visited_states[state_index])
+                {
+                    inf_count++;
+                    break;
+                }
+
+                visited_states[state_index] = true;
+
+                if (is_next_obstacle(&new, rows, columns, total_rows, total_cols))
+                {
+                    turn_right(&new);
+                }
+                else
+                {
+                    move_ahead(&new);
+                }
+            }
+
+            rows[row]->str[col] = '.';
+        }
+    }
+
+    fprintf(stdout, "%zu\n", inf_count);
 
     free(already_visited);
     cleanup_resources(input_strix, columns, lines_arr, total_cols);
